@@ -11,6 +11,8 @@ import { createTheme, ThemeProvider, useTheme } from "@mui/material/styles";
 import IconButton from "@mui/material/IconButton";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
+import CircularProgress from "@mui/material/CircularProgress"; // Added for loader
+import Button from "@mui/material/Button";
 
 const initialJson = {
   glossary: {
@@ -25,8 +27,7 @@ const initialJson = {
           Acronym: "SGML",
           Abbrev: "ISO 8879:1986",
           GlossDef: {
-            para:
-              "A meta-markup language, used to create markup languages such as DocBook.",
+            para: "A meta-markup language, used to create markup languages such as DocBook.",
             GlossSeeAlso: ["GML", "XML"],
           },
           GlossSee: "markup",
@@ -41,6 +42,8 @@ const CodeCard = () => {
   const [jsonObject, setJsonObject] = React.useState(initialJson);
   const [error, setError] = React.useState(null);
   const [isDarkMode, setIsDarkMode] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false); // Added isLoading state
+
   const theme = useTheme();
 
   const toggleDarkMode = () => {
@@ -121,17 +124,43 @@ const CodeCard = () => {
     },
   });
 
+  const handleFileUpload = (e) => {
+    setIsLoading(true); // Start loading
+    const fileReader = new FileReader();
+    fileReader.onload = (event) => {
+      try {
+        const parsedJson = JSON.parse(event.target.result);
+        setJsonInput(event.target.result); // Optionally set input text area value
+        setJsonObject(parsedJson);
+        setError(null);
+      } catch (err) {
+        setError("Invalid JSON file");
+      } finally {
+        setIsLoading(false); // Finish loading
+      }
+    };
+    fileReader.readAsText(e.target.files[0]);
+  };
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <Box sx={{ minWidth: 275, margin: 5 }}>
         <Card variant="outlined">
           <CardContent>
-            <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+            <Typography
+              sx={{ fontSize: 14 }}
+              color="text.secondary"
+              gutterBottom
+            >
               JSON
             </Typography>
             <Divider />
             <Box
-              sx={{ display: "flex", justifyContent: "space-between", gap: 2, margin: 2 }}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 2,
+                margin: 2,
+              }}
             >
               <Box sx={{ flex: 1 }}>
                 <Typography
@@ -153,6 +182,19 @@ const CodeCard = () => {
                   sx={{ flex: 1 }}
                   placeholder={JSON.stringify(initialJson, null, 2)}
                 />
+                <Button
+                  variant="outlined"
+                  component="label"
+                  sx={{ marginTop: 2 , color: isDarkMode ? "#ffffff" : "#000000", borderColor: isDarkMode ? "#ffffff" : "#000000"}}
+                >
+                  Upload JSON File
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileUpload}
+                    style={{ display: "none" }}
+                  />
+                </Button>
               </Box>
               <Divider orientation="vertical" flexItem />
               <Box sx={{ flex: 1 }}>
@@ -163,11 +205,23 @@ const CodeCard = () => {
                 >
                   JSON Tree
                 </Typography>
-                <ReactJson
-                  src={jsonObject}
-                  theme={isDarkMode ? "monokai" : "rjv-default"} // Adjust JSON viewer theme
-                  collapsed={1} // Adjust initial collapse depth for readability
-                />
+                {isLoading ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginTop: 3,
+                    }}
+                  >
+                    <CircularProgress />
+                  </Box>
+                ) : (
+                  <ReactJson
+                    src={jsonObject}
+                    theme={isDarkMode ? "monokai" : "rjv-default"}
+                    collapsed={1}
+                  />
+                )}
               </Box>
             </Box>
           </CardContent>
